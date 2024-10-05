@@ -16,7 +16,7 @@ class Node():
     def __eq__(self, other):
         return self.position == other.position
 
-def astar(maze, start, end):
+def astar(maze, start, end, heuristic):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
 
     # Create start and end node
@@ -29,13 +29,13 @@ def astar(maze, start, end):
     open_list = []
     closed_list = []
 
-    #Track nodes created
+    # Track nodes created
     nodes_created = 0
 
     # Add the start node
     open_list.append(start_node)
 
-    #Track time
+    # Track time
     start_time = time.time()
 
     # Loop until you find the end
@@ -64,16 +64,16 @@ def astar(maze, start, end):
                     total_cost += maze[current.position[0]][current.position[1]]
                 current = current.parent
             end_time = time.time()
-            runtime = (end_time - start_time) * 1000 # milliseconds
+            runtime = (end_time - start_time) * 1000  # milliseconds
             print(f"Path Cost: {total_cost}")
-            print(f"Path: {path[:: -1]}")
+            print(f"Path: {path[::-1]}")
             print(f"Nodes Created: {nodes_created}")
             print(f"Runtime: {runtime:.2f} ms")
             return
-        
-        # Generate childrenexit
+
+        # Generate children
         children = []
-        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Modified to use only up down left and right
+        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # Up, down, left, right
 
             # Get node position
             node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
@@ -100,19 +100,19 @@ def astar(maze, start, end):
             if child in closed_list:
                 continue
 
-           # Create g, h, and f values
+            # Create g, h, and f values
             child.g = current_node.g + maze[child.position[0]][child.position[1]]
-            child.h = abs(child.position[0] - end_node.position[0]) + abs(child.position[1] - end_node.position[1])  # Manhattan distance
+            child.h = heuristic(child.position, end_node.position)
             child.f = child.g + child.h
 
-           # Child is already in the open list with a higher g (cost)
+            # Child is already in the open list with a higher g (cost)
             if len([open_node for open_node in open_list if child == open_node and child.g >= open_node.g]) > 0:
                 continue
 
             # Add the child to the open list
             open_list.append(child)
-    
-    #If no path is found
+
+    # If no path is found
     end_time = time.time()
     runtime = (end_time - start_time) * 1000
     print("Path cost: -1")
@@ -121,23 +121,22 @@ def astar(maze, start, end):
     print(f"Runtime: {runtime:.2f} ms")
 
 def get_maze(maze_number):
-
     mazes = {
-        1: [[2, 4, 2, 1, 4, 5, 2],
+        1: ([[2, 4, 2, 1, 4, 5, 2],
              [0, 1, 2, 3, 5, 3, 1],
              [2, 0, 4, 4, 1, 2, 4],
              [2, 5, 5, 3, 2, 0, 1],
-             [4, 3, 3, 2, 1, 0, 1]
-        ],
-        2: [[1, 3, 2, 5, 1, 4, 3],
+             [4, 3, 3, 2, 1, 0, 1]], (1, 2), (4, 3)),  # (start, end)
+        
+        2: ([[1, 3, 2, 5, 1, 4, 3],
              [2, 1, 3, 1, 3, 2, 5],
              [3, 0, 5, 0, 1, 2, 2],
              [5, 3, 2, 1, 5, 0, 3],
              [2, 4, 1, 0, 0, 2, 0],
              [4, 0, 2, 1, 5, 3, 4],
-             [1, 5, 1, 0, 2, 4, 1]
-        ],
-        3: [[2, 0, 2, 0, 2, 0, 0, 2, 2, 0],
+             [1, 5, 1, 0, 2, 4, 1]], (3, 6), (5, 1)), 
+        
+        3: ([[2, 0, 2, 0, 2, 0, 0, 2, 2, 0],
              [1, 2, 3, 5, 2, 1, 2, 5, 1, 2],
              [2, 0, 2, 2, 1, 2, 1, 2, 4, 2],
              [2, 0, 1, 0, 1, 1, 1, 0, 0, 1],
@@ -146,9 +145,9 @@ def get_maze(maze_number):
              [1, 0, 2, 1, 3, 1, 4, 3, 0, 1],
              [2, 0, 5, 1, 5, 2, 1, 2, 4, 1],
              [1, 2, 2, 2, 0, 2, 0, 1, 1, 0],
-             [5, 1, 2, 1, 1, 1, 2, 0, 1, 2]
-        ],
-        4: [[1, 1, 0, 2, 3, 4, 5, 0, 1, 2],
+             [5, 1, 2, 1, 1, 1, 2, 0, 1, 2]], (1, 2), (8, 8)), 
+        
+        4: ([[1, 1, 0, 2, 3, 4, 5, 0, 1, 2],
              [1, 2, 0, 0, 0, 3, 1, 2, 0, 3],
              [3, 1, 5, 1, 0, 1, 2, 0, 4, 1],
              [0, 0, 1, 2, 3, 1, 1, 5, 1, 1],
@@ -157,100 +156,59 @@ def get_maze(maze_number):
              [2, 0, 2, 0, 0, 1, 0, 1, 2, 5],
              [3, 1, 1, 0, 4, 1, 5, 1, 0, 1],
              [1, 1, 0, 2, 1, 3, 1, 1, 1, 0],
-             [5, 1, 1, 0, 1, 1, 1, 0, 2, 1]
-        ],
-        5: [[1, 1, 0, 2, 3, 4, 5, 0, 1, 2, 1, 3 ,0, 3],
-             [1, 2, 0, 0, 0, 3, 1, 2, 0, 3, 1, 0, 0, 2],
-             [3, 1, 5, 1, 0, 1, 2, 0, 4, 1, 1, 3, 0, 2],
-             [4, 0, 1, 2, 3, 1, 0, 5, 1, 1, 5, 1, 1, 0],
-             [2, 1, 1, 0, 2, 5, 2, 1, 1, 3, 2, 2, 3, 1],
-             [1, 5, 0, 2, 0, 3, 4, 2, 1, 0, 3, 0, 2, 1],
-             [2, 0, 2, 2, 1, 1, 0, 1, 2, 5, 0, 2, 1, 2],
-             [3, 1, 1, 0, 4, 1, 5, 1, 0, 1, 1, 2, 1, 0],
-             [1, 1, 0, 2, 1, 3, 1, 1, 1, 0, 4, 2, 1, 1],
-             [5, 1, 1, 0, 1, 1, 1, 0, 2, 1, 3, 2, 1, 2],
-             [2, 0, 2, 0, 0, 1, 0, 1, 2, 5, 0, 2, 1, 2],
-             [3, 1, 1, 1, 4, 1, 5, 1, 0, 1, 1, 2, 1, 0],
-             [1, 1, 0, 2, 1, 0, 1, 1, 1, 0, 4, 2, 1, 1],
-             [5, 1, 1, 0, 1, 1, 1, 0, 2, 1, 3, 2, 1, 1]
-        ]
+             [5, 1, 1, 0, 1, 1, 1, 0, 2, 1]], (0, 0), (9, 9)), 
+        
+        5: ([[1, 1, 0, 2, 3, 4, 5, 0, 1, 2],
+             [1, 2, 0, 0, 0, 3, 1, 2, 0, 3],
+             [3, 1, 5, 1, 0, 1, 2, 0, 4, 1],
+             [0, 0, 1, 2, 3, 1, 1, 5, 1, 1],
+             [2, 1, 1, 0, 2, 0, 2, 1, 1, 3],
+             [1, 5, 0, 2, 0, 3, 4, 2, 1, 0],
+             [2, 0, 2, 0, 0, 1, 0, 1, 2, 5],
+             [3, 1, 1, 0, 4, 1, 5, 1, 0, 1],
+             [1, 1, 0, 2, 1, 3, 1, 1, 1, 0],
+             [5, 1, 1, 0, 1, 1, 1, 0, 2, 1]], (0, 0), (9, 9)), 
     }
 
     return mazes.get(maze_number)
 
-def heuristic_h1(node, goal):
-    return 0
+def heuristic_1(start, end):
+    return abs(start[0] - end[0]) + abs(start[1] - end[1])
 
-def heurstic_h2(node, goal):
-    return abs(node[0] - goal[0]) + abs(node[1] - goal[1])
+def heuristic_2(start, end):
+    return ((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2) ** 0.5
 
-def heuristic_h3(node, goal):
-    return abs(node[0] - goal[0]) + abs(node[1] - goal[1]) * 1.5  # For example, adding a penalty for vertical movement
+def heuristic_3(start, end):
+    return max(abs(start[0] - end[0]), abs(start[1] - end[1]))
 
-def heuristic_h4(node, goal):
-    manhattan_distance = abs(node[0] - goal[0]) + abs(node[1] - goal[1])
-    error = random.choice([-3, -2, -1, 1, 2, 3])
-    return max(0, manhattan_distance + error)  # Ensuring the heuristic is non-negative
+def heuristic_4(start, end):
+    dx = abs(start[0] - end[0])
+    dy = abs(start[1] - end[1])
+    return (dx + dy) + (2**0.5 - 2) * min(dx, dy)
 
 def main():
+    if len(sys.argv) != 3:
+        return
 
-    maze = [[0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+    maze_number = int(sys.argv[1])
+    heuristic_number = int(sys.argv[2])
 
-    start = (0, 0)
-    end = (7, 6)
+    maze, start, end = get_maze(maze_number)
 
-    path = astar(maze, start, end)
-    print(path)
-    print("\n" + "="*30 + "\n")
+    heuristics = {
+        1: heuristic_1,
+        2: heuristic_2,
+        3: heuristic_3,
+        4: heuristic_4
+    }
 
-    # Test case 1
-    maze1 = get_maze(1)
-    start1 = (1, 2)
-    end1 = (4, 3)
-    print("Test Case 1")
-    astar(maze1, start1, end1)
-    print("\n" + "="*30 + "\n")
-    
-    # Test case 2
-    maze2 = get_maze(2)
-    start2 = (3, 6)
-    end2 = (5, 1)
-    print("Test Case 2")
-    astar(maze2, start2, end2)
-    print("\n" + "="*30 + "\n")
-    
-    # Test case 3
-    maze3 = get_maze(3)
-    start3 = (1, 2)
-    end3 = (8, 8)
-    print("Test Case 3")
-    astar(maze3, start3, end3)
-    print("\n" + "="*30 + "\n")
+    heuristic = heuristics.get(heuristic_number)
 
-    # Test case 4
-    maze4 = get_maze(4)
-    start4 = (0, 0)
-    end4 = (9, 9)
-    print("Test Case 4")
-    astar(maze4, start4, end4)
-    print("\n" + "="*30 + "\n")
+    if heuristic is None:
+        print("Invalid heuristic number.")
+        return
 
-    # Test case 5
-    maze5 = get_maze(5)
-    start5 = (0, 0)
-    end5 = (13, 13)
-    print("Test Case 5")
-    astar(maze5, start5, end5)
-    print("\n" + "="*30 + "\n")
+    astar(maze, start, end, heuristic)
 
 if __name__ == '__main__':
     main()
